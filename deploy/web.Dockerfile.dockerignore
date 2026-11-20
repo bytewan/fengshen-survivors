@@ -1,0 +1,17 @@
+# 静态页镜像的构建上下文：只放行构建要用的（不带 node_modules、dist、scratch、.wt、文档这些）
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.ts
+!index.html
+!src/
+!public/
+!tools/
+!vendor/
+!deploy/Caddyfile
+!deploy/site-sync.sh
+!deploy/nginx/
+# 放行的目录里也有不要的
+**/.DS_Store
+tools/fonts/__pycache__

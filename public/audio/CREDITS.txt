@@ -1,0 +1,60 @@
+封神幸存者：回响 —— 音效与音乐的来源与许可
+
+需要署名（CC-BY 4.0，已截取、循环处理）：
+  "Big Mojo" Kevin MacLeod (incompetech.com)
+  "Guzheng City" Kevin MacLeod (incompetech.com)
+  "Black Vortex" Kevin MacLeod (incompetech.com)
+  "Himalayan Atmosphere" Kevin MacLeod (incompetech.com)
+  "Volatile Reaction" Kevin MacLeod (incompetech.com)
+  "Hitman" Kevin MacLeod (incompetech.com)
+  "Nu Flute" Kevin MacLeod (incompetech.com)
+  "Ripples" Kevin MacLeod (incompetech.com)
+  Licensed under Creative Commons: By Attribution 4.0 License
+  http://creativecommons.org/licenses/by/4.0/
+
+公有领域（CC0，无需署名，在此致谢）：
+  Swish - bamboo stick weapon swhoshes — qubodup — https://opengameart.org/content/swish-bamboo-stick-weapon-swhoshes
+  Versilian Community Sample Library（VCSL） — Versilian Studios — https://github.com/sgossner/VCSL
+  Fire Staff Sound Effects — LEGIT Audio — https://opengameart.org/content/fire-staff-sound-effects
+  Catching fire — themightyglider — https://opengameart.org/content/catching-fire
+  Fireball — Julien Matthey（diligentcircle 转载） — https://opengameart.org/content/fireball-1
+  Electricity Game Sound Pack — faxcorp — https://opengameart.org/content/electricity-game-sound-pack
+  100 CC0 SFX #2 — rubberduck — https://opengameart.org/content/100-cc0-sfx-2
+  100 CC0 SFX — rubberduck — https://opengameart.org/content/100-cc0-sfx
+  75 CC0 breaking / falling / hit sfx — rubberduck — https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+  Impact Sounds — Kenney — https://kenney.nl/assets/impact-sounds
+  20 Sword Sound Effects (Attacks and Clashes) — StarNinjas — https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes
+  Ice breaking/shattering — ignasd — https://opengameart.org/content/ice-breakingshattering
+  Swishes Sound Pack — artisticdude — https://opengameart.org/content/swishes-sound-pack
+  80 CC0 RPG SFX — rubberduck — https://opengameart.org/content/80-cc0-rpg-sfx
+  RPG Audio — Kenney — https://kenney.nl/assets/rpg-audio
+  Freeze Spell — artisticdude — https://opengameart.org/content/freeze-spell-0
+  Flare ignition — qubodup — https://opengameart.org/content/flare-ignition
+  Earth Element Magic Spell — qubodup — https://opengameart.org/content/earth-element-magic-spell
+  Ice spells — bart — https://opengameart.org/content/ice-spells
+  40 CC0 water / splash / slime SFX — rubberduck — https://opengameart.org/content/40-cc0-water-splash-slime-sfx
+  Fantasy Sound Effects (Tinysized SFX) — Vehicle（Jan Schupke） — https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx
+  Sci-fi Sounds — Kenney — https://kenney.nl/assets/sci-fi-sounds
+  Bell dings/chimes — PWL — https://opengameart.org/content/bell-dingschimes
+  Big scary troll sounds — darsycho — https://opengameart.org/content/big-scary-troll-sounds
+  CC0 Deep Monster Roar — trazzz123 — https://opengameart.org/content/cc0-deep-monster-roar
+  Earthquake and Open sesame — mieki256 — https://opengameart.org/content/earthquake-and-open-sesame
+  3 Melee sounds — remaxim — https://opengameart.org/content/3-melee-sounds
+  3 dark magic spells — qubodup — https://opengameart.org/content/3-dark-magic-spells
+  Low Rumbling — musheran — https://opengameart.org/content/low-rumbling
+  25 CC0 bang / firework SFX — rubberduck — https://opengameart.org/content/25-cc0-bang-firework-sfx
+  80 CC0 creture SFX #2 — rubberduck — https://opengameart.org/content/80-cc0-creture-sfx-2
+  Casino Audio — Kenney — https://kenney.nl/assets/casino-audio
+  Magic Spell SFX — jaggedstone — https://opengameart.org/content/magic-spell-sfx
+  80 CC0 creature SFX — rubberduck — https://opengameart.org/content/80-cc0-creature-sfx
+  Fire Crackling — AntumDeluge — https://opengameart.org/content/fire-crackling
+  RPG Sound Pack — artisticdude — https://opengameart.org/content/rpg-sound-pack
+  10 Impact/Shield Blocks — StarNinjas — https://opengameart.org/content/10-impactshield-blocks
+  Ghost Monster Voice Moaning & Growling — qubodup — https://opengameart.org/content/ghost-monster-voice-moaning-growling
+  Teleport — fins — https://opengameart.org/content/teleport
+  Air whoosh — pyranostudios — https://opengameart.org/content/air-whoosh
+  100 CC0 metal and wood SFX — rubberduck — https://opengameart.org/content/100-cc0-metal-and-wood-sfx
+  Game Over - Bad chest SFX — Oiboo — https://opengameart.org/content/game-over-bad-chest-sfx
+  自作配乐「破阵」「列阵」（本项目作曲、程序合成；打击乐与筝的采样来自 VCSL） — 本项目 — https://github.com/sgossner/VCSL
+
+逐个文件的来源见源码仓库的 docs/audio.md。

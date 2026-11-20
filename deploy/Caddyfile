@@ -1,0 +1,50 @@
+# Caddy：托管游戏的静态页 + 把 /relay 转给中继（WebSocket），自动申请、续期 HTTPS 证书。
+# 用在 docker-compose.yml 的 caddy 服务里（挂进容器；改了之后 docker compose restart caddy 生效。镜像里也拷了一份当默认）。
+#
+# SITE_ADDRESS（docker-compose 从 .env 读）：
+#   正式：游戏的域名，例如 fs.example.com —— Caddy 自己去 Let's Encrypt / ZeroSSL 申请证书、到期前续期，
+#         要求：域名已经解析到这台服务器、80 和 443 端口开着（国内的云服务器上，域名没备案的话这两个端口会被拦）。
+#   本机试：localhost —— Caddy 用它自己的本地 CA 发证书（浏览器会提示不受信任，测试时忽略即可）。
+# 想在证书续不上时收到提醒：在下面的全局设置（最上面那对大括号）里加一行 email 你的邮箱。
+{
+	# Caddy 自己的日志（启动、申请证书、出错）一行一个 JSON，打到标准输出（docker compose logs caddy 看）
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$SITE_ADDRESS} {
+	# 中继：/relay 原样转过去（中继认 /relay 前缀）。Caddy 自动处理 WebSocket 升级、加 X-Forwarded-For
+	handle /relay* {
+		reverse_proxy relay:5300
+	}
+
+	handle {
+		root * /srv/site
+		# 先找预压缩好的 .br / .gz（tools/precompress.mjs），没有再现压
+		encode zstd gzip
+		file_server {
+			precompressed br gzip
+		}
+
+		# 缓存：带内容哈希的脚本一年不变；字体、音频、图标文件名不带哈希、换版本时可能变，缓存一小时；页面每次都问一下有没有新的
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@static path /fonts/* /audio/* /icons/* /licenses/*
+		header @static Cache-Control "public, max-age=3600"
+		@page path / /index.html /manifest.webmanifest
+		header @page Cache-Control "no-cache"
+		# 有的系统镜像里没有 .webmanifest 的类型表，明写
+		@manifest path /manifest.webmanifest
+		header @manifest Content-Type "application/manifest+json"
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	# 访问日志默认不记（里面有来访者的 IP）；排查问题时临时打开：取消下一行的注释，docker compose restart caddy
+	# log
+}

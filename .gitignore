@@ -1,0 +1,22 @@
+node_modules/
+dist/
+dist-lan/
+.DS_Store
+scratch/
+*.key
+.wt/
+.venv/
+
+# 部署：服务器上的配置和证书（docs/deploy.md）
+deploy/.env
+deploy/certs/
+
+# 本地构建参数
+.env
+.env.*
+!.env.example
+
+# 本机试玩配置和概念参考素材不公开
+deploy/local.env
+art/concepts/
+tools/gen-image.mjs

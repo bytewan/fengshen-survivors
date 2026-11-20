@@ -1,0 +1,27 @@
+{
+  "name": "fengshen-survivors",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "封神幸存者：回响",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "art:sheet": "node --experimental-strip-types tools/render-sheet.ts",
+    "test": "node --test src/sim/*.test.ts src/game/*.test.ts src/render/*.test.ts src/net/*.test.ts server/*.test.mjs",
+    "relay": "node server/relay.mjs",
+    "lan": "npm run typecheck && node scripts/lan.mjs",
+    "serve:build": "bash scripts/serve-build.sh"
+  },
+  "dependencies": {
+    "pixi.js": "8.22.0",
+    "ws": "8.22.2"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "playwright": "1.62.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.6"
+  }
+}

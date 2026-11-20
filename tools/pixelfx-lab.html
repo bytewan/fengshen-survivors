@@ -1,0 +1,164 @@
+<!doctype html>
+<!--
+  pixelfx 修仙版实验页：在 Pixi 里按游戏的比例（480×270 像素放大 3 倍）轮播特效，看颜色、大小、节奏对不对。
+  开发服务器上打开 /tools/pixelfx-lab.html
+    ?fx=thunder,hitSpark   只播这几个（XFX 预设名，或库里的 id，如 ice/frost-nova）；不写就轮播全部预设
+    &raw                   用库的原配色（对照改造前后）
+    &dark                  暗背景（默认是接近第一章仙台的浅色地面）
+    &baked                 用预烘焙的图集播（playBaked），不写就是现场画（play）
+    &who=soldier           「被打的人」换成游戏里的敌人 / 人物：落点上画它的精灵（走路的第一帧），
+                           要剪影的特效（魂散 soulScatter）拿它的剪影当 actor，按体型摆的（灼烧、冻结、减速、眩晕……）按它的体型给 body。
+                           可选：soldier elite caster spearman shieldbearer cavalry bomber splitter splitling bannerman windfiend golem nezha demon
+    &noref                 不画旁边比大小的哪吒（默认在落点左边 44 像素站一个游戏里的哪吒：哪吒身子约 16×24）
+    &manual                不自动播（截图脚本 tools/pixelfx-shot.mjs 用）：window.__lab.next() 播下一个，
+                           window.__lab.seek(名, 秒, 是否预烘焙, 是否对齐) 把某个特效定在第几秒（按 1/60 秒一步推过去，结果是确定的；
+                           「对齐」是给核对用的：位置挪到抖动网点和烘焙时一致的地方、现场画也按 1/30 秒一步走），
+                           window.__lab.snap() 取当前画面的像素，window.__lab.diff(a, b) 数两张画面有多少像素不一样
+  整屏的效果（画布 480×270、原点在左上角：换章云海 chapterClouds、氛围 ambient*）放在左上角，铺满整个画面；别的放在落点 (240, 200)。
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>pixelfx 修仙版实验页</title>
+    <style>
+      html, body { margin: 0; background: #140f19; color: #c9bcae; font: 14px serif; }
+      #stage { display: flex; justify-content: center; padding-top: 8px; }
+      canvas { image-rendering: pixelated; }
+      #lbl { position: fixed; left: 10px; top: 6px; }
+    </style>
+  </head>
+  <body>
+    <div id="lbl"></div>
+    <div id="stage"></div>
+    <script type="module">
+      import { Application, Container, Graphics, Sprite } from 'pixi.js';
+      import { PixelFxLayer, bakedStats, loadFx, prebake } from '/src/render/pixelfx.ts';
+      import { XFX } from '/src/render/pixelfx-xianxia.ts';
+      import { PALETTE } from '/src/art/palette.ts';
+      import { BODY, FOE_ART, HERO_ART, actorOf } from '/src/render/pixelfx-actor.ts';
+      import { textureFromGrid } from '/src/render/textures.ts';
+
+      const q = new URLSearchParams(location.search);
+      const names = (q.get('fx') ?? Object.keys(XFX).join(',')).split(',');
+      const dark = q.has('dark');
+      const SPOT = { x: 240, y: 200 }; // 落点（一般特效的原点放在这里）
+      // 「被打的人」：游戏里的敌人 / 人物
+      const whoName = q.get('who');
+      const who = whoName ? (FOE_ART[whoName] ?? HERO_ART[whoName] ?? null) : null;
+      if (whoName && !who) console.warn(`没有这个人物：${whoName}`);
+      const app = new Application();
+      await app.init({ width: 480, height: 270, background: dark ? PALETTE.k : PALETTE.z, antialias: false, resolution: 1 });
+      app.canvas.style.width = '1440px';
+      app.canvas.style.height = '810px';
+      document.getElementById('stage').appendChild(app.canvas);
+      const world = new Container();
+      world.sortableChildren = true;
+      app.stage.addChild(world);
+      world.addChild(new Graphics().rect(0, 200, 480, 70).fill({ color: dark ? PALETTE.d : PALETTE.j }));
+      /** 在 (x, y)（脚底）摆一个游戏精灵（锚点在脚底）。 */
+      const stand = (art, x, y, z = 0) => {
+        const s = new Sprite(textureFromGrid(art.g));
+        s.anchor.set(art.a.x / art.g.w, art.a.y / art.g.h);
+        s.position.set(x, y);
+        s.zIndex = z;
+        world.addChild(s);
+        return s;
+      };
+      // 比大小：落点左边站一个哪吒；被打的人站在落点上（都在特效下面）
+      const ref = q.has('noref') ? null : stand(HERO_ART.nezha, SPOT.x - 44, SPOT.y, 1);
+      const target = who ? stand(who, SPOT.x, SPOT.y, 1) : null;
+      const layer = new PixelFxLayer(world);
+      layer.view.zIndex = 2;
+      /** 整屏的效果（480×270 的画布、原点在左上角）：放在左上角；被打的人和比大小的哪吒这时藏起来。 */
+      const fullScreen = (mod) => mod.meta.origin[0] === 0 && mod.meta.origin[1] === 0 && mod.meta.size[0] >= 480 && mod.meta.size[1] >= 270;
+      /** 被打的人给特效的选项：要剪影的给 actor，按体型摆的给 body（预设自己写了的不覆盖 actor 之外的旋钮）。 */
+      function whoOpts(mod, opts) {
+        if (!who) return opts;
+        const o = { ...opts };
+        if (mod.meta.actor) o.actor = actorOf(who.g, who.a);
+        if ('body' in (mod.meta.options ?? {}) && who.body) o.body = BODY[who.body];
+        return o;
+      }
+      let i = 0;
+      async function play(n, useBaked = q.has('baked'), at = null) {
+        const p = XFX[n] ?? { id: n, opts: {}, note: '' };
+        const mod = await loadFx(p.id);
+        const full = fullScreen(mod);
+        at ??= full ? { x: 0, y: 0 } : { ...SPOT };
+        if (ref) ref.visible = !full;
+        if (target) target.visible = !full && !mod.meta.actor; // 要剪影的（魂散）自己画这个人：精灵藏起来
+        const opts = whoOpts(mod, q.has('raw') ? {} : p.opts);
+        const where = full ? '整屏，左上角对齐' : `落点 (${at.x}, ${at.y})${who ? ` · 被打的人：${whoName}` : ''}`;
+        if (useBaked) {
+          const key = `${n}${q.has('raw') ? ':raw' : ''}${who ? `:${whoName}` : ''}`;
+          const t0 = performance.now();
+          const fresh = !bakedStats().keys.includes(key);
+          await prebake(key, p.id, opts);
+          const st = bakedStats();
+          document.getElementById('lbl').textContent =
+            `${n} · ${p.id} · ${where} · 预烘焙${fresh ? `（画了 ${Math.round(performance.now() - t0)} 毫秒）` : ''} · 图集共 ${(st.bytes / 1048576).toFixed(1)} MB · ${p.note}`;
+          layer.playBaked(key, p.id, opts, at);
+        } else {
+          document.getElementById('lbl').textContent = `${n} · ${p.id} · ${where} · ${p.note}`;
+          layer.play(mod, { ...opts, ...at });
+        }
+      }
+      async function next() {
+        const n = names[i % names.length];
+        i++;
+        await play(n);
+      }
+      let frozen = false; // seek 之后画面定住，不再跟着时钟走
+      async function seek(n, t, useBaked = q.has('baked'), exact = false) {
+        frozen = true;
+        layer.clear();
+        const mod = await loadFx((XFX[n] ?? { id: n }).id);
+        let at = fullScreen(mod) ? { x: 0, y: 0 } : { ...SPOT };
+        let hz = 60;
+        if (exact) {
+          // 库里半透明的抖动网点（4×4）是钉在世界坐标上的，烘焙时特效的画布左上角在 (0,0)；
+          // 核对时把位置挪到「画布左上角是 4 的整数倍」的地方，网点才对得上。现场画也按烘焙的步子（1/30 秒）走，免得时间累加的尾数不一样。
+          const [ox, oy] = mod.meta.origin;
+          at = { x: at.x - ((at.x - ox) & 3), y: at.y - ((at.y - oy) & 3) };
+          hz = 30;
+        }
+        await play(n, useBaked, at);
+        const steps = Math.round(t * hz);
+        for (let i = 0; i < steps; i++) layer.update(1 / hz);
+        layer.update(0); // 把走到的这一刻摆上画面（预烘焙的是先摆帧再走时间）
+        app.render();
+      }
+      // 取当前画面的像素（刚 render 完马上取，WebGL 画布这时还读得到）
+      const probe = document.createElement('canvas');
+      probe.width = 480;
+      probe.height = 270;
+      const pg = probe.getContext('2d', { willReadFrequently: true });
+      function snap() {
+        app.render();
+        pg.clearRect(0, 0, 480, 270);
+        pg.drawImage(app.canvas, 0, 0);
+        return pg.getImageData(0, 0, 480, 270).data;
+      }
+      function diff(a, b) {
+        let n = 0;
+        let max = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]));
+          if (d) n++;
+          if (d > max) max = d;
+        }
+        return { pixels: n, maxDelta: max };
+      }
+      window.__lab = { layer, next, seek, snap, diff, bakedStats };
+      app.ticker.add((t) => {
+        if (!frozen) layer.update(Math.min(0.05, t.deltaMS / 1000));
+      });
+      if (!q.has('manual')) {
+        await next();
+        setInterval(() => {
+          if (!layer.count) next();
+        }, 300);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+# 本机试一遍（不上公网、不申请证书）：两套反向代理一起起，端口只绑在 127.0.0.1。
+#   cd deploy
+#   docker compose --env-file local.env -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#   Caddy：https://localhost:5311/   （Caddy 自己的本地 CA 发的证书，浏览器会提示不受信任；页面自动连 wss://localhost:5311/relay）
+#   nginx：http://localhost:5312/?relay=ws://localhost:5312/relay   （只有 http；非默认端口的 http 页面默认连 :5300，所以要带 ?relay=）
+#   试完：docker compose --env-file local.env -f docker-compose.yml -f docker-compose.local.yml down -v --rmi all
+# 联机实测（两个 Playwright 页面）：见 docs/deploy.md「本机试」。
+name: fengshen-local
+
+services:
+  caddy:
+    ports: !override
+      - "127.0.0.1:5311:443"
+
+  nginx:
+    environment:
+      SERVER_NAME: localhost
+    ports: !override
+      - "127.0.0.1:5312:80"
+    volumes: !override
+      - ./nginx/local-http.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/fengshen-site.conf:/etc/nginx/snippets/fengshen-site.conf:ro
+      - site-nginx:/srv/site
+
+volumes:
+  site-nginx:

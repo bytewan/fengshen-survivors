@@ -1,0 +1,98 @@
+# 《封神幸存者：回响》上线用的 docker compose 样例：中继（relay）+ 静态页和反向代理（Caddy 或 nginx 二选一）。
+# 一步步怎么部署、更新、看日志：docs/deploy.md。
+#
+#   cd deploy && cp .env.example .env && 改 .env    # 域名、选 Caddy 还是 nginx
+#   docker compose up -d --build                    # 构建两个镜像并起来（第一次要几分钟）
+#   docker compose ps / logs -f relay / logs -f caddy
+#
+# 对外只开 80、443（静态页和 /relay 都从这里进）；中继只在 compose 的内网里，不对外。
+name: fengshen
+
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: deploy/relay.Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    image: fengshen-relay:latest
+    restart: unless-stopped
+    environment:
+      RELAY_PORT: "5300"
+      RELAY_HOST: 0.0.0.0
+      # 只让自己的网页来连（逗号分隔，要带 https://）
+      RELAY_ORIGINS: ${RELAY_ORIGINS:?在 .env 里写 RELAY_ORIGINS，例如 https://fs.example.com}
+      # 在反向代理后面：按代理加的 X-Forwarded-For 认来访的 IP（中继不对外，只有代理连得到它，所以可以信）
+      RELAY_TRUST_PROXY: "1"
+      # 公网：/info 不报本机地址、/stats 不列房间码
+      RELAY_LAN: "0"
+      RELAY_LOG: json
+      RELAY_MAX_ROOMS: ${RELAY_MAX_ROOMS:-500}
+      RELAY_MAX_CONNS: ${RELAY_MAX_CONNS:-2000}
+      RELAY_MAX_CONNS_PER_IP: ${RELAY_MAX_CONNS_PER_IP:-24}
+    expose:
+      - "5300"
+    # docker stop / 更新时：中继先告诉房里的人「要关了」，约 1.5 秒后关连接退出
+    stop_grace_period: 10s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  # 静态页 + 反向代理（Caddy）：自动申请、续期 HTTPS 证书。.env 里 COMPOSE_PROFILES=caddy
+  caddy:
+    profiles: [caddy]
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+      target: caddy
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    image: fengshen-web-caddy:latest
+    restart: unless-stopped
+    depends_on:
+      - relay
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?在 .env 里写 SITE_ADDRESS，例如 fs.example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3（云服务器的安全组里也要放行 UDP 443；不放行浏览器自己退回 TCP）
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - site:/srv/site
+      - caddy-data:/data # 证书和账号：删了要重新申请
+      - caddy-config:/config
+    logging: *logging
+
+  # 静态页 + 反向代理（nginx）：用云厂商发的证书，放在 deploy/certs/。.env 里 COMPOSE_PROFILES=nginx
+  nginx:
+    profiles: [nginx]
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+      target: nginx
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    image: fengshen-web-nginx:latest
+    restart: unless-stopped
+    depends_on:
+      - relay
+    environment:
+      SERVER_NAME: ${SITE_ADDRESS:?在 .env 里写 SITE_ADDRESS，例如 fs.example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/fengshen-site.conf:/etc/nginx/snippets/fengshen-site.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - site:/srv/site
+    logging: *logging
+
+volumes:
+  # 静态页：每次起来把新版本拷进来，旧版本的 assets 留着（deploy/site-sync.sh）
+  site:
+  caddy-data:
+  caddy-config:

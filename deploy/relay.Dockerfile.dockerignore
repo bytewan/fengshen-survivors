@@ -1,0 +1,4 @@
+# 中继镜像的构建上下文：只放行用得到的几个文件（BuildKit 认「<Dockerfile 名>.dockerignore」，放在 Dockerfile 旁边）
+*
+!package-lock.json
+!server/relay.mjs
